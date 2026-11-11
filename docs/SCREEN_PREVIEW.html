@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>업보 룰렛 · 화면 구성 참고</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#242030;background:#efedf2;line-height:1.5;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;padding:32px 16px;word-break:keep-all;overflow-wrap:anywhere}header{max-width:900px;margin:0 auto 28px}h1{font-size:24px;margin:0 0 12px}header p{margin:0;color:#575063}.screens{max-width:900px;margin:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.screen{background:#fff;border:1px solid #81788d;border-radius:24px;padding:24px 20px 34px;min-width:0}.caption{font-size:14px;font-weight:700;color:#575063;margin:0 0 20px}.brand{display:flex;align-items:center;gap:10px;font-weight:700;margin-bottom:32px}.mark{width:22px;height:22px;border:2px solid #614292;border-radius:50%;background:conic-gradient(#614292 0 130deg,#c3b0da 130deg 240deg,#efe7f8 240deg)}.badge{font-size:13px;color:#575063;padding:4px 8px;background:#f6f4fa;border-radius:8px}.eyebrow{font-size:15px;color:#614292;font-weight:600}h2{font-size:28px;line-height:1.3;letter-spacing:-.04em;margin:10px 0 16px}p{margin:8px 0 20px}.muted{color:#575063}.modes{display:grid;gap:12px;margin:24px 0}.mode{display:flex;align-items:center;gap:12px;border:2px solid #81788d;border-radius:20px;padding:20px 16px;min-height:132px}.symbol{display:grid;place-items:center;flex:0 0 40px;height:40px;border:2px solid #614292;color:#614292;font-size:22px;border-radius:50%}.split{border-radius:12px}.copy{flex:1}.copy strong{font-size:21px;display:block;margin-bottom:6px}.copy span{color:#575063}.radio{width:24px;height:24px;border:2px solid #81788d;border-radius:50%;flex:0 0 24px}.button{display:block;text-align:center;font-weight:600;border-radius:12px;border:1px solid #a29aa9;padding:16px;margin-top:28px;background:#e9e6ed;color:#625b6b;min-height:56px}.input{border:1px solid #81788d;border-radius:10px;padding:12px;min-height:52px;margin-top:8px}label{font-weight:600}.amount{font-size:28px;font-weight:700}.notice{background:#f6f4fa;border:1px solid #81788d;border-radius:16px;padding:16px;margin-top:24px}.notice p{margin:12px 0 0}.back{border:1px solid #81788d;border-radius:12px;padding:12px 16px;display:inline-block;margin-top:24px}.foot{border-top:1px solid #d5cfdd;padding-top:20px;margin-top:32px;font-size:15px;color:#575063}@media(max-width:720px){.screens{grid-template-columns:1fr}.screen{max-width:440px;width:100%;margin:auto}}@media(max-width:359px){.symbol{display:none}.screen{padding:20px 16px}}
+</style>
+</head>
+<body>
+<header><h1>업보 룰렛 · 화면 구성 참고</h1><p>작성한 React 소스의 색상·문구·상태를 옮긴 정적 HTML입니다. 앱 실행 화면이나 캡처가 아니며 버튼은 동작하지 않습니다. 금액은 설명용 가상 입력입니다. 설치·스크립트·빌드·테스트를 실행하지 않았습니다.</p></header>
+<div class="screens">
+<section class="screen" aria-label="모드 선택 화면 구성">
+<p class="caption">UX-01 · 모드 선택 전</p>
+<div class="brand"><span class="mark" aria-hidden="true"></span>업보 룰렛<span class="badge">준비 중</span></div>
+<div class="eyebrow">모임을 위한 정산 유틸리티</div>
+<h2>오늘의 정산,<br>어떻게 할까요?</h2>
+<p class="muted">한 명을 뽑거나, 점수에 따라 나눠요.<br>2명부터 12명까지 함께할 수 있어요.</p>
+<div class="modes"><div class="mode"><span class="symbol">1</span><div class="copy"><strong>독박 룰렛</strong><span>업보 점수에 따라 결제 담당자 한 명을 뽑아요</span></div><span class="radio" aria-hidden="true"></span></div>
+<div class="mode"><span class="symbol split">2</span><div class="copy"><strong>업보 N빵</strong><span>업보 점수에 따라 총액을 나눠요</span></div><span class="radio" aria-hidden="true"></span></div></div>
+<p class="muted">실제 결제나 송금 기능은 없어요. 결과는 참가자끼리 합의해 활용해 주세요.</p>
+<p class="muted">정산 모드를 선택해 주세요.</p><div class="button">참가자 설정 · 선택 대기</div>
+<div class="foot">준비 중인 기능 안내<br>Q01~Q08 미확정 정책은 보류 상태로 안내해요.</div>
+</section>
+<section class="screen" aria-label="N빵 금액 입력 보류 화면 구성">
+<p class="caption">UX-02A · 총액 입력 / 시작 보류</p>
+<div class="brand"><span class="mark" aria-hidden="true"></span>업보 룰렛<span class="badge">준비 중</span></div>
+<div class="eyebrow">업보 N빵</div><h2>얼마를 나눌까요?</h2>
+<p class="muted">2명이 나눌 총 결제 금액을 입력해 주세요.</p>
+<label>총 결제 금액 (원)</label><div class="input">120000</div>
+<p class="muted">쉼표 없이 양의 정수로 입력해 주세요. 입력값을 자동으로 반올림하지 않아요.</p>
+<p class="amount">120,000원</p>
+<aside class="notice"><strong>기준 확정 후 이용할 수 있어요</strong><p><strong>Q01</strong> 질문과 점수 기준을 검토하고 있어요. 확정 전에는 응답을 시작할 수 없어요.</p><p><strong>Q02</strong> 금액 배분 방식을 검토하고 있어요. 정산 금액은 아직 제공하지 않아요.</p><p><strong>Q05</strong> 닉네임과 금액의 입력 기준을 검토하고 있어요. 입력값은 초안으로만 다뤄요.</p></aside>
+<div class="button">업보 청문회 시작 · 기준 확정 대기</div><span class="back">이전 단계</span>
+<div class="foot">현재 입력은 이 화면을 사용하는 동안만 보관해요. 새로고침 복구는 준비 중이에요.</div>
+</section>
+</div>
+</body>
+</html>

@@ -1,0 +1,27 @@
+node_modules/
+dist/
+dist-ssr/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# 환경별 설정과 인증 정보 (공유용 예시는 포함)
+.env*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+
+# 로그 및 로컬 도구 설정
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.codex/
+.claude/
+.cursor/
+.mcp.json
