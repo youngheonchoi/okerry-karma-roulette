@@ -43,7 +43,7 @@
 | `src/App.tsx` | 모드별 전체 화면과 이벤트 연결·입력 오류·응답 가림 |
 | `src/styles.css` | 모바일 1열·명명 토큰·48px 조작·초점·안전영역·동작 감소 |
 | `docs/SCREEN_PREVIEW.html` | 두 화면의 정적 구성 참고. 실제 앱 캡처 아님 |
-| `docs/IMPLEMENTATION_REPORT.md` | 이 보고서 |
+| `docs/reports/IMPLEMENTATION_REPORT.md` | 이 보고서 |
 
 ## 3. 주요 기술적 결정과 정책 경계
 

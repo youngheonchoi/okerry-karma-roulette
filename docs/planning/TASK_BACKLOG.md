@@ -1,7 +1,7 @@
 # 업보 룰렛 — 개발 준비 백로그
 
 - 버전: 0.1 / PM 통합 초안
-- 기반: [PRD.md](./PRD.md), [FUNCTIONAL_SPEC.md](./FUNCTIONAL_SPEC.md), [USER_FLOW.md](./USER_FLOW.md), [SCREEN_SPEC.md](./SCREEN_SPEC.md)
+- 기반: [PRD.md](PRD.md), [FUNCTIONAL_SPEC.md](../specs/FUNCTIONAL_SPEC.md), [USER_FLOW.md](../specs/USER_FLOW.md), [SCREEN_SPEC.md](../specs/SCREEN_SPEC.md)
 - 우선순위: P0 = MVP 흐름 완성에 필수, P1 = MVP 품질·검증 필수, P2 = 출시 이후 검토.
 - 담당은 역할 기준이다. 실제 배정 전 저장소·팀 일정에 맞춰 조정한다.
 

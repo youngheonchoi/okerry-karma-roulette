@@ -1,7 +1,7 @@
 import { calculateScore, parseAmount, validateParticipants } from './domain';
 import type { Answer, Mode, Participant, SoloResult, WeightedParticipant } from './domain';
 import { policy } from './policy';
-import type { QuestionPolicy } from './policy';
+import type { Policy, QuestionPolicy } from './policy';
 
 export type Screen = 'mode' | 'participants' | 'amount' | 'handoff' | 'answering' | 'review' | 'roulette' | 'result' | 'sharing';
 export interface Session {
@@ -41,6 +41,7 @@ export type Action =
   | { type: 'split-result' }
   | { type: 'result'; result: SoloResult }
   | { type: 'share' }
+  | { type: 'edit-settings' }
   | { type: 'restart'; same: boolean }
   | { type: 'error'; message: string };
 
@@ -57,35 +58,35 @@ function snapshotQuestions(config: QuestionPolicy): QuestionPolicy {
 }
 
 /** 비동기 효과 없는 전이. 중복 완료·추첨·이전 라운드 결과 반영은 무시한다. */
-export function sessionReducer(state: Session, action: Action): Session {
+export function sessionReducer(state: Session, action: Action, config: Policy = policy): Session {
   try {
     switch (action.type) {
       case 'mode':
-        return state.screen === 'mode' ? { ...state, mode: action.mode, error: '' } : state;
+        return state.screen === 'mode' ? { ...initialSession, mode: action.mode, screen: 'participants',
+          participants: [{ id: 'participant-1', nickname: '' }, { id: 'participant-2', nickname: '' }] } : state;
       case 'participants':
         return state.screen === 'participants' && action.participants.length >= 2 && action.participants.length <= 12
           ? { ...state, participants: action.participants, error: '' } : state;
       case 'amount':
         return state.screen === 'amount' ? { ...state, amountDraft: action.value, error: '' } : state;
       case 'next':
-        if (state.screen === 'mode' && state.mode) return { ...state, screen: 'participants', error: '' };
         if (state.screen === 'participants' && state.mode === 'split' &&
-          !Object.keys(validateParticipants(state.participants, policy.inputs)).length) {
+          !Object.keys(validateParticipants(state.participants, config.inputs)).length) {
           return { ...state, screen: 'amount', error: '' };
         }
         return state;
       case 'start': {
         if ((state.screen !== 'participants' && state.screen !== 'amount') || !state.mode) return state;
         if (state.mode === 'split' && state.screen !== 'amount') return state;
-        if (!policy.questions || !policy.inputs) throw new Error('질문과 입력 기준 확정 후 시작할 수 있어요.');
-        if (Object.keys(validateParticipants(state.participants, policy.inputs)).length) {
+        if (!config.questions || !config.inputs) throw new Error('질문과 입력 기준 확정 후 시작할 수 있어요.');
+        if (Object.keys(validateParticipants(state.participants, config.inputs)).length) {
           throw new Error('참가자 입력을 확인해 주세요.');
         }
-        calculateScore([], policy.questions); // 문항 구성을 검증한 뒤 라운드를 만든다.
+        calculateScore([], config.questions); // 문항 구성을 검증한 뒤 라운드를 만든다.
         return { ...state, screen: 'handoff', roundId: state.roundId + 1, current: 0,
-          questionSetVersion: policy.questions.version, questionPolicy: snapshotQuestions(policy.questions),
-          participants: state.participants.map((row) => ({ ...row, nickname: policy.inputs!.normalizeNickname(row.nickname) })),
-          totalAmount: state.mode === 'split' ? parseAmount(state.amountDraft, policy.inputs) : null,
+          questionSetVersion: config.questions.version, questionPolicy: snapshotQuestions(config.questions),
+          participants: state.participants.map((row) => ({ ...row, nickname: config.inputs!.normalizeNickname(row.nickname) })),
+          totalAmount: state.mode === 'split' ? parseAmount(state.amountDraft, config.inputs) : null,
           draft: [], answers: {}, result: null, error: '' };
       }
       case 'reveal':
@@ -139,14 +140,19 @@ export function sessionReducer(state: Session, action: Action): Session {
         const screen = previous[state.screen];
         return screen ? { ...state, screen, error: '' } : state;
       }
+      case 'edit-settings':
+        if (!['handoff', 'review'].includes(state.screen)) return state;
+        return { ...state, screen: 'participants', roundId: state.roundId + 1, current: 0,
+          questionSetVersion: null, questionPolicy: null, draft: [], answers: {}, result: null, error: '' };
       case 'restart':
         if (!action.same) return { ...initialSession, roundId: state.roundId + 1 };
-        if (!state.mode || !policy.questions || !policy.inputs) return state;
-        if (state.mode === 'split' && !policy.restart) throw new Error('금액 유지 기준 확정 후 다시 진행할 수 있어요.');
-        return { ...state, screen: state.mode === 'split' && !policy.restart?.preserveAmount ? 'amount' : 'handoff',
-          amountDraft: state.mode === 'split' && !policy.restart?.preserveAmount ? '' : state.amountDraft,
-          totalAmount: state.mode === 'split' && !policy.restart?.preserveAmount ? null : state.totalAmount,
-          questionSetVersion: policy.questions.version, questionPolicy: snapshotQuestions(policy.questions),
+        if (state.screen !== 'result') return state;
+        if (!state.mode || !config.questions || !config.inputs) throw new Error('질문과 입력 기준 확정 후 다시 진행할 수 있어요.');
+        if (state.mode === 'split' && !config.restart) throw new Error('금액 유지 기준 확정 후 다시 진행할 수 있어요.');
+        return { ...state, screen: state.mode === 'split' && !config.restart?.preserveAmount ? 'amount' : 'handoff',
+          amountDraft: state.mode === 'split' && !config.restart?.preserveAmount ? '' : state.amountDraft,
+          totalAmount: state.mode === 'split' && !config.restart?.preserveAmount ? null : state.totalAmount,
+          questionSetVersion: config.questions.version, questionPolicy: snapshotQuestions(config.questions),
           roundId: state.roundId + 1, current: 0, draft: [], answers: {}, result: null, error: '' };
       case 'error': return { ...state, error: action.message };
     }

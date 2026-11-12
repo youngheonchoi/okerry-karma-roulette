@@ -32,9 +32,9 @@
 ## 5. 산출물
 
 - [구현 보고서](IMPLEMENTATION_REPORT.md)
-- [UX 정적 검토](UX_STATIC_REVIEW.md)
-- [QA 요구사항 정적 대조](QA_REQUIREMENTS_STATIC_REVIEW.md)
-- [정적 화면 참고 HTML](SCREEN_PREVIEW.html)
+- [UX 정적 검토](../reviews/UX_STATIC_REVIEW.md)
+- [QA 요구사항 정적 대조](../reviews/QA_REQUIREMENTS_STATIC_REVIEW.md)
+- [정적 화면 참고 HTML](../SCREEN_PREVIEW.html)
 - [후속 보완 보고서](FOLLOWUP_FIX_REPORT.md)
 - 이 취합 보고서
 

@@ -1,7 +1,7 @@
 # 업보 룰렛 — 기능 상세 명세
 
 - 버전: 0.1 / PM 통합 초안
-- 근거: [mvp.md](./mvp.md) v1.0 및 [USER_FLOW.md](./USER_FLOW.md), [SCREEN_SPEC.md](./SCREEN_SPEC.md) v0.3
+- 근거: [mvp.md](../planning/mvp.md) v1.0 및 [USER_FLOW.md](USER_FLOW.md), [SCREEN_SPEC.md](SCREEN_SPEC.md) v0.3
 - 상태: 원문 요구와 제안 정책을 구분한 구현 인계 초안. Q01~Q08 확정 전에는 해당 정책을 고정값으로 구현하지 않는다.
 
 ## 공통 데이터·상태
@@ -103,7 +103,7 @@
 
 ## Q01~Q08 교차 참조
 
-단일 상태·대안·추천·영향 표는 [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md)를 기준으로 한다. 아래는 기능 영향이다.
+단일 상태·대안·추천·영향 표는 [OPEN_QUESTIONS.md](../planning/OPEN_QUESTIONS.md)를 기준으로 한다. 아래는 기능 영향이다.
 
 | 질문 | 기능 영향 | 결정 전 제약 |
 |---|---|---|

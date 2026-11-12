@@ -3,7 +3,7 @@
 - 작성: 어그(UX/UI 디자이너), 2026-11-11 / v0.1
 - 대상: USER_FLOW·SCREEN_SPEC v0.3, PRD·FUNCTIONAL_SPEC·TASK_BACKLOG·OPEN_QUESTIONS v0.1, mvp.md v1.0.
 - 상태: 문서 교차 검토 완료. 정책 승인·실제 UI 검증은 미완료. 기존 문서의 정책을 대체하거나 승인하지 않는다.
-- 단일 정책 상태 기준: [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md). Q01~Q08 결정 완료는 현재 없다.
+- 단일 정책 상태 기준: [OPEN_QUESTIONS.md](../planning/OPEN_QUESTIONS.md). Q01~Q08 결정 완료는 현재 없다.
 
 ## 1. 디자인 목표
 

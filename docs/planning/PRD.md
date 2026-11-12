@@ -1,7 +1,7 @@
 # 업보 룰렛 — 제품 요구사항 정의서(PRD)
 
 - 버전: 0.1 / PM 통합 초안
-- 기준: [mvp.md](./mvp.md) v1.0, [USER_FLOW.md](./USER_FLOW.md) v0.3, [SCREEN_SPEC.md](./SCREEN_SPEC.md) v0.3
+- 기준: [mvp.md](mvp.md) v1.0, [USER_FLOW.md](../specs/USER_FLOW.md) v0.3, [SCREEN_SPEC.md](../specs/SCREEN_SPEC.md) v0.3
 - 상태: 원문 요구와 초안 정책을 통합한 검토본. 미확정 항목 Q01~Q08은 승인된 정책이 아니다.
 - 프로젝트 코드·기술 스택·디자인 시스템은 확인되지 않았다. 구현 기술을 임의 지정하지 않는다.
 
@@ -89,4 +89,4 @@ F01 모드 선택, F02 참가자 설정·랜덤 닉네임, F03 N빵 금액 입�
 
 ## 8. 정책 대기
 
-미확정 정책과 선택지·추천 근거·영향은 [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) Q01~Q08을 단일 기준으로 삼는다. 특히 Q02 정산 공식과 Q03 주요 질문 공개 방식은 구현 전에 결정해야 한다. [FUNCTIONAL_SPEC.md](./FUNCTIONAL_SPEC.md), [USER_FLOW.md](./USER_FLOW.md), [SCREEN_SPEC.md](./SCREEN_SPEC.md)의 같은 ID와 일치시킨다.
+미확정 정책과 선택지·추천 근거·영향은 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) Q01~Q08을 단일 기준으로 삼는다. 특히 Q02 정산 공식과 Q03 주요 질문 공개 방식은 구현 전에 결정해야 한다. [FUNCTIONAL_SPEC.md](../specs/FUNCTIONAL_SPEC.md), [USER_FLOW.md](../specs/USER_FLOW.md), [SCREEN_SPEC.md](../specs/SCREEN_SPEC.md)의 같은 ID와 일치시킨다.

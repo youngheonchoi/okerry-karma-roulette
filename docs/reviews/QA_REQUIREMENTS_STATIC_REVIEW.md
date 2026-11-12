@@ -2,7 +2,7 @@
 
 - 검토자: 베릴 / QA
 - 검토일: 2026-11-11
-- 기준: PRD.md, FUNCTIONAL_SPEC.md, OPEN_QUESTIONS.md Q01~Q08, 소스 및 docs/IMPLEMENTATION_REPORT.md·docs/UX_STATIC_REVIEW.md
+- 기준: PRD.md, FUNCTIONAL_SPEC.md, OPEN_QUESTIONS.md Q01~Q08, 소스 및 docs/reports/IMPLEMENTATION_REPORT.md·docs/reviews/UX_STATIC_REVIEW.md
 - 범위: F01~F08, 정책 미확정 보류, 재진입·공유 경계의 정적 대조
 - 제한: 실행·스크립트·설치·빌드·테스트·브라우저 렌더링은 수행하지 않음
 
@@ -57,7 +57,7 @@ Q02의 100원 혼합안 또는 최대잔여법을 확정값으로 넣은 코드�
 
 ## 4. 기존 검토와의 연결
 
-- docs/UX_STATIC_REVIEW.md의 D01~D06은 기존 UX 정적 리뷰에서 이미 보고된 항목이다. 특히 뒤로가기(D01), 결과 접근성 발표(D02), 입력 오류 제거(D04), N빵 재진행 설명(D06)은 이 대조에서도 구현 완료로 확인되지 않았다.
+- docs/reviews/UX_STATIC_REVIEW.md의 D01~D06은 기존 UX 정적 리뷰에서 이미 보고된 항목이다. 특히 뒤로가기(D01), 결과 접근성 발표(D02), 입력 오류 제거(D04), N빵 재진행 설명(D06)은 이 대조에서도 구현 완료로 확인되지 않았다.
 - 새로 확인한 본 보고의 QAR-01~04는 기존 보고에 동일 재현 조건으로 등록되지 않은 요구 경계다. 이 문서는 수정 적용 보고가 아니다.
 
 ## 5. 미검증 항목 및 판단

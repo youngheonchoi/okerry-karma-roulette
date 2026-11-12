@@ -2,7 +2,7 @@
 
 - 작성: 미니 / 프론트엔드 개발자 / 2026-11-11
 - 프로젝트: `C:\Users\EM_NB118\OneDrive\바탕 화면\okerry-karma-roulette`
-- 기준: `docs/UX_STATIC_REVIEW.md`, `docs/QA_REQUIREMENTS_STATIC_REVIEW.md`, `OPEN_QUESTIONS.md`, 기존 소스
+- 기준: `docs/reviews/UX_STATIC_REVIEW.md`, `docs/reviews/QA_REQUIREMENTS_STATIC_REVIEW.md`, `OPEN_QUESTIONS.md`, 기존 소스
 - 결과: 지정된 5개 항목의 코드 보완 및 정적 검토 완료. 실행 검증·접근성 합격·출시 가능 판정은 하지 않았다.
 
 ## 1. 구현 내용 및 파일·라인
@@ -18,7 +18,7 @@
 | 응답 중 점수 알림 / D05 | `src/App.tsx:205~218` | 본인 점수에 `role="status"`, `aria-live="polite"`, `aria-atomic="true"`를 적용했다. 질문 전체나 초점을 다시 옮기지 않는다. 해당 영역은 응답 화면 내부에만 있어 가림·완료 시 질문과 함께 제거된다. |
 | CSS safe-area / D03 | `src/styles.css:93,97` | 600px 이상 좌우 여백도 `max(24px, 해당 inset)`으로 유지한다. dialog의 사방 inset·최대 폭·최대 높이에도 각각의 안전 영역을 반영했다. |
 
-생성 파일: `docs/FOLLOWUP_FIX_REPORT.md`. 수정 소스는 `src/App.tsx`, `src/session.ts`, `src/styles.css` 3개이며 의존성·정책·기존 검토 문서·정적 참고 HTML은 수정하지 않았다.
+생성 파일: `docs/reports/FOLLOWUP_FIX_REPORT.md`. 수정 소스는 `src/App.tsx`, `src/session.ts`, `src/styles.css` 3개이며 의존성·정책·기존 검토 문서·정적 참고 HTML은 수정하지 않았다.
 
 ## 2. 주요 기술적 결정
 

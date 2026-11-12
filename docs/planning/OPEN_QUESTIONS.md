@@ -1,9 +1,9 @@
 # 업보 룰렛 — 미확정 정책 및 결정 기록
 
 - 버전: 0.1 / PM 통합 초안
-- 출처: [mvp.md](./mvp.md) v1.0, UX 제출 v0.2 및 인수인계 기본안
+- 출처: [mvp.md](mvp.md) v1.0, UX 제출 v0.2 및 인수인계 기본안
 - 상태 정의: `결정 필요`는 구현 전 선택이 필요한 항목, `초안 권고`는 진행을 위한 기본안이며 승인 전 확정 정책이 아니다.
-- 현재 결정 완료: 없음. 아래 Q01~Q08은 [USER_FLOW.md](./USER_FLOW.md), [SCREEN_SPEC.md](./SCREEN_SPEC.md), [FUNCTIONAL_SPEC.md](./FUNCTIONAL_SPEC.md), [TASK_BACKLOG.md](./TASK_BACKLOG.md)에서 동일 ID를 사용한다.
+- 현재 결정 완료: 없음. 아래 Q01~Q08은 [USER_FLOW.md](../specs/USER_FLOW.md), [SCREEN_SPEC.md](../specs/SCREEN_SPEC.md), [FUNCTIONAL_SPEC.md](../specs/FUNCTIONAL_SPEC.md), [TASK_BACKLOG.md](TASK_BACKLOG.md)에서 동일 ID를 사용한다.
 
 | ID | 질문·원문 근거 | 선택지 | 초안 권고 및 근거 | 영향·필요 결정 |
 |---|---|---|---|---|

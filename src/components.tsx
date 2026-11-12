@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { drawWinner, formatInteger, getRatios, probabilityText } from './domain';
 import type { SoloResult, WeightedParticipant } from './domain';
 import { pendingPolicies } from './policy';
@@ -13,8 +13,9 @@ export function PolicyNotice({ ids }: { ids: readonly string[] }) {
 
 export function Actions({ children }: { children: ReactNode }) { return <div className="actions">{children}</div>; }
 
-export function ConfirmRestart({ same, onCancel, onConfirm }: {
-  same: boolean; onCancel: () => void; onConfirm: () => void;
+export function ConfirmRestart({ same, settings = false, amountBehavior, onCancel, onConfirm }: {
+  same: boolean; settings?: boolean; amountBehavior?: 'preserve' | 'clear';
+  onCancel: () => void; onConfirm: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
@@ -27,15 +28,20 @@ export function ConfirmRestart({ same, onCancel, onConfirm }: {
       if (original instanceof HTMLElement) original.focus();
     };
   }, []);
-  return <dialog ref={dialog} aria-labelledby="restart-title" aria-describedby="restart-description"
+  return <dialog ref={dialog} aria-labelledby="restart-title"
+    aria-describedby={!settings && same && amountBehavior ? 'restart-description restart-amount' : 'restart-description'}
     onCancel={(event) => { event.preventDefault(); onCancel(); }}>
-    <h2 id="restart-title">{same ? '같은 참가자로 다시 진행할까요?' : '새로운 참가자로 시작할까요?'}</h2>
-    <p id="restart-description">{same
+    <h2 id="restart-title">{settings ? '참가자 설정을 변경할까요?' : same ? '같은 참가자로 다시 진행할까요?' : '새로운 참가자로 시작할까요?'}</h2>
+    <p id="restart-description">{settings
+      ? '모드·참가자·입력 금액은 유지하고 참가자 설정으로 돌아가요. 현재 응답·점수·결과는 초기화해요.'
+      : same
       ? '모드와 참가자 순서는 유지해요. 응답·점수·추첨 결과는 초기화하고 첫 참가자부터 시작해요.'
       : '모드·참가자·금액·응답·결과를 모두 초기화하고 모드 선택으로 이동해요.'}</p>
+    {!settings && same && amountBehavior && <p id="restart-amount">{amountBehavior === 'preserve'
+      ? 'N빵 총액은 유지해요.' : 'N빵 총액은 지우고 금액 입력부터 다시 진행해요.'}</p>}
     <div className="button-stack">
       <button ref={cancel} onClick={onCancel}>현재 진행 유지</button>
-      <button className="primary" onClick={onConfirm}>{same ? '응답을 초기화하고 다시 진행' : '초기화하고 새로 시작'}</button>
+      <button className="primary" onClick={onConfirm}>{settings ? '응답을 초기화하고 설정 변경' : same ? '응답을 초기화하고 다시 진행' : '초기화하고 새로 시작'}</button>
     </div>
   </dialog>;
 }
@@ -104,8 +110,9 @@ export function Roulette({ rows, roundId, onResult, onError, onBusy }: {
       <div className={`wheel ${spinning ? 'spinning' : ''}`} style={{ background, transform: `rotate(${rotation}deg)` }}
         onTransitionEnd={(event) => { if (event.target === event.currentTarget && event.propertyName === 'transform') publish(); }}>
         {segments.map((segment, index) => segment.end - segment.start >= 18 && <span key={index} className="wheel-number" style={{
-          '--angle': `${segment.center}deg`,
-        } as CSSProperties}>{index + 1}</span>)}
+          left: `${50 + 36 * Math.sin(segment.center * Math.PI / 180)}%`,
+          top: `${50 - 36 * Math.cos(segment.center * Math.PI / 180)}%`,
+        }}>{index + 1}</span>)}
         <div className="wheel-hub" />
       </div>
     </div>
