@@ -35,13 +35,32 @@ function resultState() {
 }
 
 describe('session lifecycle and privacy', () => {
-  it('blocks real sessions when policy decisions are absent', () => {
+  it('blocks sessions when policy decisions are absent', () => {
     const draft = { ...initialSession, screen: 'participants' as const, mode: 'solo' as const,
       participants: [{ id: 'a', nickname: '가' }, { id: 'b', nickname: '나' }] };
-    const state = sessionReducer(draft, { type: 'start' });
+    const state = sessionReducer(draft, { type: 'start' }, { questions: null, inputs: null, restart: null });
     expect(state.screen).toBe('participants');
     expect(state.error).not.toBe('');
     expect(state.questionPolicy).toBeNull();
+  });
+  it('draws five shared questions per round and draws again on restart', () => {
+    const draft = { ...initialSession, screen: 'participants' as const, mode: 'solo' as const,
+      participants: [{ id: 'a', nickname: '가' }, { id: 'b', nickname: '나' }] };
+    let state = sessionReducer(draft, { type: 'start', draw: [0.1, 0, 0, 0] });
+    const questions = state.questionPolicy!.questions;
+    expect(questions.map(({ weight }) => weight)).toEqual([-15n, -20n, 10n, 10n, -10n]);
+    expect(new Set(questions.map(({ id }) => id)).size).toBe(5);
+    state = sessionReducer(state, { type: 'reveal' });
+    state = sessionReducer(state, { type: 'toggle', id: questions[0]!.id });
+    state = sessionReducer(state, { type: 'complete' });
+    state = sessionReducer(state, { type: 'reveal' });
+    expect(state.questionPolicy?.questions).toBe(questions);
+    expect(state.draft).toEqual([]);
+    state = sessionReducer(state, { type: 'complete' });
+    expect(weightedParticipants(state).map(({ score }) => score)).toEqual([70n, 100n]);
+    state = sessionReducer({ ...state, screen: 'result' }, { type: 'restart', same: true, draw: [0.9, 0, 0, 0] });
+    expect(state.questionPolicy?.questions.map(({ weight }) => weight)).toEqual([-15n, -20n, 10n, -10n, -10n]);
+    expect(state.answers).toEqual({});
   });
   it('normalizes names and freezes the question set for a round', () => {
     const state = start();
@@ -67,7 +86,7 @@ describe('session lifecycle and privacy', () => {
     expect(() => weightedParticipants(start())).toThrow();
     const state = completeRound();
     expect(state.screen).toBe('review');
-    expect(weightedParticipants(state).map((row) => row.score)).toEqual([130n, 100n]);
+    expect(weightedParticipants(state).map((row) => row.score)).toEqual([160n, 100n]);
     expect(reduce(state, { type: 'back' })).toBe(state);
   });
   it('returns to settings only on explicit confirmation and clears private round data', () => {

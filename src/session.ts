@@ -2,6 +2,8 @@ import { calculateScore, parseAmount, validateParticipants } from './domain';
 import type { Answer, Mode, Participant, SoloResult, WeightedParticipant } from './domain';
 import { policy } from './policy';
 import type { Policy, QuestionPolicy } from './policy';
+import { drawRecentQuestions } from './questions';
+import type { QuestionDraw } from './questions';
 
 export type Screen = 'mode' | 'participants' | 'amount' | 'handoff' | 'answering' | 'review' | 'roulette' | 'result' | 'sharing';
 export interface Session {
@@ -15,6 +17,8 @@ export interface Session {
   readonly questionPolicy: QuestionPolicy | null;
   readonly current: number;
   readonly draft: readonly string[];
+  readonly rejectedDraft: readonly string[];
+  readonly rerollsUsed: number;
   readonly answers: Readonly<Record<string, Answer>>;
   readonly result: SoloResult | null;
   readonly error: string;
@@ -24,16 +28,18 @@ export const initialSession: Session = {
   participants: [{ id: 'participant-1', nickname: '' }, { id: 'participant-2', nickname: '' }],
   amountDraft: '', totalAmount: null, roundId: 0, current: 0,
   questionSetVersion: null, questionPolicy: null,
-  draft: [], answers: {}, result: null, error: '',
+  draft: [], rejectedDraft: [], rerollsUsed: 0, answers: {}, result: null, error: '',
 };
 export type Action =
   | { type: 'mode'; mode: Mode }
   | { type: 'participants'; participants: readonly Participant[] }
   | { type: 'amount'; value: string }
   | { type: 'next' }
-  | { type: 'start' }
+  | { type: 'start'; draw?: QuestionDraw }
   | { type: 'reveal' }
   | { type: 'toggle'; id: string }
+  | { type: 'answer'; id: string; value: 'yes' | 'no' }
+  | { type: 'reroll-question'; id: string }
   | { type: 'complete' }
   | { type: 'hide' }
   | { type: 'back' }
@@ -42,7 +48,7 @@ export type Action =
   | { type: 'result'; result: SoloResult }
   | { type: 'share' }
   | { type: 'edit-settings' }
-  | { type: 'restart'; same: boolean }
+  | { type: 'restart'; same: boolean; draw?: QuestionDraw }
   | { type: 'error'; message: string };
 
 export function weightedParticipants(state: Session): readonly WeightedParticipant[] {
@@ -53,8 +59,13 @@ export function weightedParticipants(state: Session): readonly WeightedParticipa
   });
 }
 
-function snapshotQuestions(config: QuestionPolicy): QuestionPolicy {
-  return { ...config, questions: config.questions.map((question) => ({ ...question })) };
+function snapshotQuestions(config: QuestionPolicy, draw?: QuestionDraw): QuestionPolicy {
+  const { randomPools } = config;
+  if (randomPools && !draw) throw new Error('랜덤 질문을 다시 뽑아 주세요.');
+  const questions = [...config.questions, ...(randomPools && draw ? drawRecentQuestions(randomPools, draw) : [])];
+  const roundPolicy = { ...config, questions: questions.map((question) => ({ ...question })) };
+  calculateScore([], roundPolicy);
+  return roundPolicy;
 }
 
 /** 비동기 효과 없는 전이. 중복 완료·추첨·이전 라운드 결과 반영은 무시한다. */
@@ -82,12 +93,11 @@ export function sessionReducer(state: Session, action: Action, config: Policy = 
         if (Object.keys(validateParticipants(state.participants, config.inputs)).length) {
           throw new Error('참가자 입력을 확인해 주세요.');
         }
-        calculateScore([], config.questions); // 문항 구성을 검증한 뒤 라운드를 만든다.
         return { ...state, screen: 'handoff', roundId: state.roundId + 1, current: 0,
-          questionSetVersion: config.questions.version, questionPolicy: snapshotQuestions(config.questions),
+          questionSetVersion: config.questions.version, questionPolicy: snapshotQuestions(config.questions, action.draw),
           participants: state.participants.map((row) => ({ ...row, nickname: config.inputs!.normalizeNickname(row.nickname) })),
           totalAmount: state.mode === 'split' ? parseAmount(state.amountDraft, config.inputs) : null,
-          draft: [], answers: {}, result: null, error: '' };
+          draft: [], rejectedDraft: [], rerollsUsed: 0, answers: {}, result: null, error: '' };
       }
       case 'reveal':
         return state.screen === 'handoff' && state.questionPolicy && state.participants[state.current]
@@ -96,15 +106,39 @@ export function sessionReducer(state: Session, action: Action, config: Policy = 
         if (state.screen !== 'answering' || !state.questionPolicy?.questions.some((q) => q.id === action.id)) return state;
         return { ...state, draft: state.draft.includes(action.id)
           ? state.draft.filter((id) => id !== action.id) : [...state.draft, action.id], error: '' };
+      case 'answer':
+        if (state.screen !== 'answering' || !state.questionPolicy?.questions.some((q) => q.id === action.id)) return state;
+        return { ...state,
+          draft: action.value === 'yes' ? [...state.draft.filter((id) => id !== action.id), action.id] : state.draft.filter((id) => id !== action.id),
+          rejectedDraft: action.value === 'no' ? [...state.rejectedDraft.filter((id) => id !== action.id), action.id] : state.rejectedDraft.filter((id) => id !== action.id), error: '' };
+      case 'reroll-question': {
+        if (state.screen !== 'answering' || state.rerollsUsed >= 3 ||
+          !state.questionPolicy?.randomPools) return state;
+        const questions = state.questionPolicy.questions;
+        const index = questions.findIndex((question) => question.id === action.id);
+        const current = questions[index];
+        if (index < 2 || !current) return state;
+        const pool = current.weight > 0n ? state.questionPolicy.randomPools.luck : state.questionPolicy.randomPools.misfortune;
+        const usedIds = new Set(questions.filter((_, questionIndex) => questionIndex !== index).map(({ id }) => id));
+        const candidates = pool.filter(({ id }) => !usedIds.has(id));
+        const replacement = candidates[Math.floor(Math.random() * candidates.length)];
+        if (!replacement) return state;
+        const updated = [...questions];
+        updated[index] = replacement;
+        return { ...state, questionPolicy: { ...state.questionPolicy, questions: updated },
+          draft: state.draft.filter((id) => id !== action.id),
+          rejectedDraft: state.rejectedDraft.filter((id) => id !== action.id), rerollsUsed: state.rerollsUsed + 1, error: '' };
+      }
       case 'complete': {
         if (state.screen !== 'answering' || !state.questionPolicy) return state;
         const participant = state.participants[state.current];
         if (!participant || state.answers[participant.id]) return state;
         const answers = { ...state.answers, [participant.id]: {
-          selectedIds: [...state.draft], score: calculateScore(state.draft, state.questionPolicy),
+          selectedIds: [...state.draft], rejectedIds: [...state.rejectedDraft],
+          score: calculateScore(state.draft, state.questionPolicy, state.mode),
         } };
         const last = state.current === state.participants.length - 1;
-        return { ...state, answers, draft: [], current: last ? state.current : state.current + 1,
+        return { ...state, answers, draft: [], rejectedDraft: [], rerollsUsed: 0, current: last ? state.current : state.current + 1,
           screen: last ? 'review' : 'handoff', error: '' };
       }
       case 'hide':
@@ -125,7 +159,7 @@ export function sessionReducer(state: Session, action: Action, config: Policy = 
           }) || !participants.some((row) => row.id === action.result.winnerId)) return state;
         // 호출자 배열 참조 대신 현재 라운드에서 복제한 확정값을 저장한다.
         return { ...state, result: { kind: 'solo', roundId: state.roundId,
-          winnerId: action.result.winnerId, participants }, screen: 'result', error: '' };
+          winnerId: action.result.winnerId, participants }, error: '' };
       }
       case 'split-result':
         if (state.screen !== 'review' || state.mode !== 'split' || state.totalAmount === null) return state;
@@ -135,7 +169,7 @@ export function sessionReducer(state: Session, action: Action, config: Policy = 
         return state.screen === 'result' && state.result ? { ...state, screen: 'sharing' } : state;
       case 'back': {
         const previous: Partial<Record<Screen, Screen>> = {
-          participants: 'mode', amount: 'participants', answering: 'handoff', roulette: 'review', sharing: 'result',
+          participants: 'mode', amount: 'participants', handoff: 'participants', answering: 'handoff', roulette: 'review', sharing: 'result',
         };
         const screen = previous[state.screen];
         return screen ? { ...state, screen, error: '' } : state;
@@ -143,17 +177,19 @@ export function sessionReducer(state: Session, action: Action, config: Policy = 
       case 'edit-settings':
         if (!['handoff', 'review'].includes(state.screen)) return state;
         return { ...state, screen: 'participants', roundId: state.roundId + 1, current: 0,
-          questionSetVersion: null, questionPolicy: null, draft: [], answers: {}, result: null, error: '' };
+          questionSetVersion: null, questionPolicy: null, draft: [], rejectedDraft: [], rerollsUsed: 0, answers: {}, result: null, error: '' };
       case 'restart':
         if (!action.same) return { ...initialSession, roundId: state.roundId + 1 };
         if (state.screen !== 'result') return state;
         if (!state.mode || !config.questions || !config.inputs) throw new Error('질문과 입력 기준 확정 후 다시 진행할 수 있어요.');
         if (state.mode === 'split' && !config.restart) throw new Error('금액 유지 기준 확정 후 다시 진행할 수 있어요.');
-        return { ...state, screen: state.mode === 'split' && !config.restart?.preserveAmount ? 'amount' : 'handoff',
-          amountDraft: state.mode === 'split' && !config.restart?.preserveAmount ? '' : state.amountDraft,
-          totalAmount: state.mode === 'split' && !config.restart?.preserveAmount ? null : state.totalAmount,
-          questionSetVersion: config.questions.version, questionPolicy: snapshotQuestions(config.questions),
-          roundId: state.roundId + 1, current: 0, draft: [], answers: {}, result: null, error: '' };
+        const needsAmount = state.mode === 'split' && !config.restart?.preserveAmount;
+        return { ...state, screen: needsAmount ? 'amount' : 'handoff',
+          amountDraft: needsAmount ? '' : state.amountDraft,
+          totalAmount: needsAmount ? null : state.totalAmount,
+          questionSetVersion: needsAmount ? null : config.questions.version,
+          questionPolicy: needsAmount ? null : snapshotQuestions(config.questions, action.draw),
+          roundId: state.roundId + 1, current: 0, draft: [], rejectedDraft: [], rerollsUsed: 0, answers: {}, result: null, error: '' };
       case 'error': return { ...state, error: action.message };
     }
   } catch (error) {

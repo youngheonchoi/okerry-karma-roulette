@@ -1,8 +1,11 @@
+import { SplitResult } from './SplitResult';
+import { BottomBanner } from './BottomBanner';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Actions, ConfirmRestart, PolicyNotice, Roulette } from './components';
-import { calculateScore, calculateSettlement, formatInteger, getRatios, parseAmount, probabilityText, validateParticipants } from './domain';
+import { formatInteger, getRatios, parseAmount, probabilityText, validateParticipants } from './domain';
 import { policy } from './policy';
+import { newQuestionDraw } from './questions';
 import { initialSession, sessionReducer, weightedParticipants } from './session';
 import type { Action, Session } from './session';
 import type { Participant } from './domain';
@@ -11,7 +14,7 @@ import { ModeArtwork } from './ModeArtwork';
 
 const titles = {
   mode: '오늘 계산\n업보로 정해볼까요?', participants: '함께할 사람을 알려 주세요', amount: '얼마를 나눌까요?',
-  handoff: '휴대폰을 전달해 주세요', answering: '나에게 해당하는 항목을 골라요', review: '모두 차례를 마쳤어요',
+  handoff: '', answering: '', review: '모두 차례를 마쳤어요',
   roulette: '누가 계산하게 될까요?', result: '오늘의 정산 결과', sharing: '공유 내용을 확인해 주세요',
 };
 const randomNames = ['월급 루팡', '지각 대장', '통장 텅장', '운 좋은 사람', '오늘의 호구', '회식 요정', '야근 전문가', '카드값 폭탄', '간식 대장', '막차 수호자', '약속 시간왕', '커피 수혈러'];
@@ -42,11 +45,9 @@ export function App() {
       if (activeScreen.current === 'answering') flushSync(() => dispatch({ type: 'hide' }));
     }
     const visibility = () => { if (document.visibilityState === 'hidden') conceal(); };
-    window.addEventListener('blur', conceal);
     window.addEventListener('pagehide', conceal);
     document.addEventListener('visibilitychange', visibility);
     return () => {
-      window.removeEventListener('blur', conceal);
       window.removeEventListener('pagehide', conceal);
       document.removeEventListener('visibilitychange', visibility);
     };
@@ -61,7 +62,7 @@ export function App() {
     participantSubmitAttempted.current = true;
     const found = validateParticipants(state.participants, policy.inputs);
     if (Object.keys(found).length) { showErrors(found); return; }
-    dispatch({ type: state.mode === 'split' ? 'next' : 'start' });
+    dispatch(state.mode === 'split' ? { type: 'next' } : { type: 'start', draw: newQuestionDraw() });
   }
   function updateParticipants(rows: readonly Participant[], changedId: string) {
     const normalize = policy.inputs?.normalizeNickname ?? ((value: string) => value);
@@ -102,17 +103,6 @@ export function App() {
     } else dispatch({ type: 'amount', value: `${currentAmount}${key}` });
     setErrors((previous) => { const next = { ...previous }; delete next.amount; return next; });
   }
-  function remove(id: string) {
-    if (state.participants.length <= 2) return;
-    const index = state.participants.findIndex((row) => row.id === id);
-    if (index < 0) return;
-    const rows = state.participants.filter((row) => row.id !== id);
-    updateParticipants(rows, id);
-    requestAnimationFrame(() => {
-      const neighbor = rows[Math.min(index, rows.length - 1)];
-      document.getElementById(neighbor ? `name-${neighbor.id}` : 'add-participant')?.focus();
-    });
-  }
   function adjustParticipantCount(delta: number) {
     const count = Math.min(12, Math.max(2, state.participants.length + delta));
     if (count === state.participants.length) return;
@@ -133,7 +123,8 @@ export function App() {
   function back() {
     if (restart !== null) { setRestart(null); setEditingSettings(false); return; }
     if (busy) return;
-    if (['handoff', 'review'].includes(state.screen)) { setEditingSettings(true); setRestart(false); }
+    if (state.screen === 'handoff') dispatch({ type: 'back' });
+    else if (state.screen === 'review') { setEditingSettings(true); setRestart(false); }
     else if (state.screen === 'result') setRestart(false);
     else dispatch({ type: 'back' });
   }
@@ -148,10 +139,12 @@ export function App() {
   const winner = result?.participants.find((row) => row.id === result.winnerId);
   const resultTotal = result?.participants.reduce((sum, row) => sum + row.score, 0n) ?? 0n;
 
-  return <div className="app-shell">
+  return <div className={state.screen === 'answering' ? 'app-shell answering-shell' : 'app-shell'}>
     <main>
-      {state.screen !== 'mode' && state.screen !== 'participants' && state.screen !== 'amount' && <div className="eyebrow">{modeName}</div>}
-      <h1 ref={heading} className={state.screen === 'mode' || state.screen === 'participants' || state.screen === 'amount' ? 'mode-title' : undefined} tabIndex={-1} aria-describedby={state.screen === 'result' && winner ? 'winner-summary' : undefined}>{titles[state.screen]}</h1>
+      {state.screen !== 'mode' && state.screen !== 'participants' && state.screen !== 'amount' && state.screen !== 'handoff' && state.screen !== 'answering' && state.screen !== 'review' && state.screen !== 'result' && state.screen !== 'roulette' && <div className="eyebrow">{modeName}</div>}
+      {state.screen === 'handoff' && <p className="handoff-progress">{state.current + 1}/{state.participants.length}</p>}
+      {state.screen === 'answering' && current && <div className="answering-heading"><h1><span>{current.nickname}님</span><br />진행중</h1><span className="answering-progress">{state.current + 1}/{state.participants.length}</span></div>}
+      {state.screen !== 'handoff' && state.screen !== 'answering' && state.screen !== 'roulette' && !(state.screen === 'result' && state.mode === 'split') && <h1 ref={heading} className={state.screen === 'mode' || state.screen === 'participants' || state.screen === 'amount' || state.screen === 'review' ? 'mode-title' : undefined} tabIndex={-1} aria-describedby={state.screen === 'result' && winner ? 'winner-summary' : undefined}>{titles[state.screen]}</h1>}
       {state.error && <p className="error" role="alert">{state.error}</p>}
 
       {state.screen === 'mode' && <>
@@ -198,43 +191,47 @@ export function App() {
         </div>
         <p id="amount-error" className="error" role="alert">{errors.amount}</p>
         <Actions><button className="amount-back" onClick={back}>뒤로</button><button className="primary amount-next" disabled={!canStart} onClick={() => {
-          try { parseAmount(state.amountDraft, policy.inputs); dispatch({ type: 'start' }); }
+          try { parseAmount(state.amountDraft, policy.inputs); dispatch({ type: 'start', draw: newQuestionDraw() }); }
           catch (error) { showErrors({ amount: (error as Error).message }); }
         }}>다음</button></Actions>
       </>}
 
       {state.screen === 'handoff' && current && <>
-        <div className="handoff-card"><p>{state.current + 1}/{state.participants.length}번째 참가자</p>
-          <h2>다음은 {current.nickname}님 차례예요</h2>
-          <p>휴대폰을 받았다면 아래 버튼을 눌러 주세요.</p></div>
-        <p className="muted">준비 버튼은 본인 인증 기능이 아니에요. 옆에서 화면을 보거나 캡처하는 행동은 막을 수 없어요.</p>
-        <Actions><button className="primary" disabled={!state.questionPolicy} onClick={() => dispatch({ type: 'reveal' })}>내 질문 시작</button></Actions>
+        <div className="handoff-center"><span className="handoff-name">{current.nickname}님</span><span className="handoff-message">차례에요</span></div>
+        <div className="actions handoff-actions"><button onClick={back}>뒤로</button><button className="primary" disabled={!state.questionPolicy} onClick={() => dispatch({ type: 'reveal' })}>다음</button></div>
       </>}
 
       {state.screen === 'answering' && state.questionPolicy && current && <>
-        <p className="intro">{current.nickname}님 · {state.current + 1}/{state.participants.length}번째 참가자 · 선택 없이 완료해도 괜찮아요.</p>
-        <button onClick={() => dispatch({ type: 'hide' })}>화면 가리기</button>
-        <p className="score" role="status" aria-live="polite" aria-atomic="true">현재 점수 {formatInteger(calculateScore(state.draft, state.questionPolicy))}점</p>
-        {Array.from(new Set(state.questionPolicy.questions.map((q) => q.category))).map((category) => <fieldset className="question-group" key={category}>
-          <legend>{category}</legend>{state.questionPolicy?.questions.filter((q) => q.category === category).map((q) => <label className="question" key={q.id}>
-            <input type="checkbox" checked={state.draft.includes(q.id)} onChange={() => dispatch({ type: 'toggle', id: q.id })} />
-            <span>{q.text}<span className="question-weight">{q.weight > 0n ? '+' : ''}{q.weight.toString()}점</span></span>
-          </label>)}
-        </fieldset>)}
-        <Actions><button className="primary" onClick={() => dispatch({ type: 'complete' })}>응답 완료</button></Actions>
+        <div className="question-scroll" role="region" aria-label="업보 질문" tabIndex={0}>
+          {state.questionPolicy.questions.map((q) => {
+            const selected = state.draft.includes(q.id);
+            return <div className="question" key={q.id}>
+              <span>{q.text}</span>
+              <div className="question-response">
+                <div className="question-choices" role="group" aria-label={q.text}>
+                  <button type="button" className="answer-o" aria-label={`${q.text} O`} aria-pressed={selected} onClick={() => dispatch({ type: 'answer', id: q.id, value: 'yes' })}>O</button>
+                  <button type="button" className="answer-x" aria-label={`${q.text} X`} aria-pressed={state.rejectedDraft.includes(q.id)} onClick={() => dispatch({ type: 'answer', id: q.id, value: 'no' })}>X</button>
+                  {state.questionPolicy!.questions.indexOf(q) >= 2 && state.rerollsUsed < 3 && <button type="button" className="question-reroll" aria-label="다른 질문으로 바꾸기" onClick={() => dispatch({ type: 'reroll-question', id: q.id })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2" /></svg></button>}
+                </div>
+              </div>
+            </div>;
+          })}
+        </div>
+        <div className="actions answering-actions"><button className="primary" onClick={() => dispatch({ type: 'complete' })}>응답 완료</button></div>
       </>}
 
       {state.screen === 'review' && <>
-        <p className="intro">{Object.keys(state.answers).length}/{state.participants.length}명 완료</p>
-        <ol className="roster">{state.participants.map((row, index) => <li key={row.id}><span className="number">{index + 1}</span>
-          <div><strong>{row.nickname}</strong><p>{state.answers[row.id] ? '응답 완료' : '시작 전'}</p></div></li>)}</ol>
-        {state.mode === 'solo' ? <Actions><button className="primary" onClick={() => dispatch({ type: 'review' })}>룰렛 확인</button></Actions>
-          : <><PolicyNotice ids={['Q02', 'Q03']} />
-            <Actions><button className="primary" onClick={() => dispatch({ type: 'split-result' })}>정산 준비 상태 보기</button></Actions></>}
+        <div className="review-action-wrap">
+          <button className="mode-card review-mode-card" onClick={() => dispatch({ type: state.mode === 'solo' ? 'review' : 'split-result' })}>
+            <strong>{state.mode === 'solo' ? '룰렛 보기' : 'N빵 하기'}</strong>
+            <ModeArtwork mode={state.mode ?? 'solo'} />
+          </button>
+        </div>
       </>}
 
       {state.screen === 'roulette' && (rouletteError ? <p className="error" role="alert">{rouletteError}</p> :
         <Roulette key={state.roundId} rows={rouletteRows} roundId={state.roundId} onBusy={setBusy}
+          winner={winner?.nickname} onHome={() => dispatch({ type: 'restart', same: false })}
           onResult={(value) => dispatch({ type: 'result', result: value })} onError={(message) => dispatch({ type: 'error', message })} />)}
 
       {state.screen === 'result' && result && winner && <>
@@ -248,31 +245,22 @@ export function App() {
           <button onClick={() => setRestart(false)}>새로운 참가자로 시작</button></Actions>
       </>}
 
-      {state.screen === 'result' && state.mode === 'split' && state.totalAmount !== null && <>
-        <div className="result-card"><p>총 결제 금액</p><h2>{formatInteger(state.totalAmount)}원</h2><p>금액 배분 대기</p></div>
-        <p>{calculateSettlement().message}</p>
-        <ol className="roster">{state.participants.map((row, index) => <li key={row.id}>
-          <span className="number">{index + 1}</span><div><strong>{row.nickname}</strong><p>부담액: 기준 확정 대기</p></div>
-        </li>)}</ol>
-        <p><strong>정산 합계: 아직 산출하지 않았어요</strong></p>
-        <PolicyNotice ids={['Q02', 'Q03', 'Q06', 'Q07']} />
-        <Actions><button className="primary" disabled>정산 결과 공유</button>
-          <button disabled={!policy.restart} onClick={() => setRestart(true)}>같은 참가자로 다시 진행</button>
-          <button onClick={() => setRestart(false)}>새로운 참가자로 시작</button></Actions>
-      </>}
+      {state.screen === 'result' && state.mode === 'split' && state.totalAmount !== null &&
+        <SplitResult key={state.roundId} amount={state.totalAmount} participants={weightedParticipants(state)}
+          onHome={() => dispatch({ type: 'restart', same: false })} />}
 
       {state.screen === 'sharing' && <><PolicyNotice ids={['Q07']} />
         <p>공유 방식과 링크가 확정되면 참가자·당첨자·당첨자 점수와 확률을 미리 확인할 수 있어요. 질문과 응답은 공유하지 않아요.</p>
         <Actions><button className="primary" onClick={() => dispatch({ type: 'back' })}>결과로 돌아가기</button></Actions></>}
 
-      {state.screen !== 'mode' && state.screen !== 'sharing' && state.screen !== 'participants' && state.screen !== 'amount' && <button className="back-action" disabled={busy} onClick={back}>
+      {state.screen !== 'mode' && state.screen !== 'sharing' && state.screen !== 'participants' && state.screen !== 'amount' && state.screen !== 'handoff' && state.screen !== 'answering' && state.screen !== 'review' && state.screen !== 'roulette' && !(state.screen === 'result' && state.mode === 'split') && <button className="back-action" disabled={busy} onClick={back}>
         {['handoff', 'review'].includes(state.screen) ? '참가자 설정 변경' : state.screen === 'result' ? '새로 시작 안내' : '이전 단계'}</button>}
     </main>
-    {state.screen !== 'mode' && state.screen !== 'participants' && state.screen !== 'amount' && <footer>결과는 참가자끼리 합의해 활용해 주세요.<br />현재 입력은 이 화면을 사용하는 동안만 보관해요. 새로고침 복구는 준비 중이에요.</footer>}
+    <BottomBanner />
     {restart !== null && <ConfirmRestart same={restart} settings={editingSettings}
       amountBehavior={state.mode === 'split' && policy.restart ? (policy.restart.preserveAmount ? 'preserve' : 'clear') : undefined}
       onCancel={() => { setRestart(null); setEditingSettings(false); }} onConfirm={() => {
-      dispatch(editingSettings ? { type: 'edit-settings' } : { type: 'restart', same: restart });
+      dispatch(editingSettings ? { type: 'edit-settings' } : { type: 'restart', same: restart, draw: restart ? newQuestionDraw() : undefined });
       setRestart(null); setEditingSettings(false);
     }} />}
   </div>;

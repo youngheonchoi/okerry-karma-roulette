@@ -66,8 +66,8 @@ describe('weighted draw and settlement integrity', () => {
     expect(probabilityText(100n, 300n)).toBe('33.33%');
     expect(() => getRatios([rows[0]!, rows[0]!])).toThrow();
   });
-  it('keeps production policies unapproved until a decision is recorded', () => {
-    expect(policy).toEqual({ questions: null, inputs: null, restart: null });
+  it('keeps restart and settlement pending', () => {
+    expect(policy.restart).toBeNull();
     expect(calculateSettlement().status).toBe('pending');
   });
   it('accepts zero shares but rejects wrong sums, unknown IDs and negative amounts', () => {

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-// Only intercepted browser responses use these fixtures. Production policy stays null.
+// Only intercepted browser responses use these fixtures. Fixtures exercise long labels and the optional N빵 restart path.
 async function useFixturePolicy(page: Page) {
   await page.route('**/src/policy.ts', (route) => route.fulfill({
     contentType: 'application/javascript',
@@ -47,7 +47,7 @@ async function assertLayout(page: Page) {
 async function setUp(page: Page, count = 2, mode: 'solo' | 'split' = 'solo') {
   await page.getByRole('button', { name: mode === 'solo' ? '한명뽑기' : 'N빵하기', exact: true }).click();
   for (let index = 2; index < count; index++) {
-    await page.getByRole('button', { name: '참가자 추가', exact: true }).click();
+    await page.getByRole('button', { name: '참가자 한 명 늘리기', exact: true }).click();
   }
   for (let index = 1; index <= count; index++) {
     await page.getByLabel(`참가자 ${index} 닉네임`, { exact: true }).fill(`${index}가나다라마바사아자차카타파하가나다라`);
@@ -78,7 +78,7 @@ for (const viewport of [
       if (viewport.width === 390 && fontSize === 100) await page.screenshot({ path: info.outputPath('mode.png'), fullPage: true });
       await setUp(page);
       await assertLayout(page);
-      await page.getByRole('button', { name: '업보 청문회 시작', exact: true }).click();
+      await page.getByRole('button', { name: '다음', exact: true }).click();
       await assertLayout(page);
       for (let i = 0; i < 2; i++) {
         await page.getByRole('button', { name: '내 질문 시작', exact: true }).click();
@@ -118,7 +118,7 @@ test('12 participants and keyboard-sized viewport keep the last input and action
   await page.goto('/');
   await setUp(page, 12);
   await assertLayout(page);
-  await expect(page.getByRole('button', { name: '참가자 추가', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '참가자 한 명 늘리기', exact: true })).toBeDisabled();
   // A viewport resize checks reflow, not a real OS keyboard.
   await page.setViewportSize({ width: 320, height: 280 });
   const lastInput = page.getByLabel('참가자 12 닉네임', { exact: true });
@@ -126,7 +126,7 @@ test('12 participants and keyboard-sized viewport keep the last input and action
   await lastInput.scrollIntoViewIfNeeded();
   await expect(lastInput).toBeInViewport();
   await assertLayout(page);
-  const next = page.getByRole('button', { name: '업보 청문회 시작', exact: true });
+  const next = page.getByRole('button', { name: '다음', exact: true });
   await next.scrollIntoViewIfNeeded();
   await expect(next).toBeInViewport();
   await next.click();
@@ -148,7 +148,7 @@ test('asymmetric safe areas protect content and the scrollable confirmation dial
   });
   expect(padding).toEqual([44, 24, 34, 44]);
   await setUp(page);
-  await page.getByRole('button', { name: '업보 청문회 시작', exact: true }).click();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
   await page.getByRole('button', { name: '참가자 설정 변경', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -167,10 +167,10 @@ test('split amount and result reflow at 200% text with a short viewport', async 
   await page.goto('/');
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   await setUp(page, 2, 'split');
-  await page.getByRole('button', { name: '총액 입력', exact: true }).click();
-  await page.getByLabel('총 결제 금액 (원)').fill('99999999');
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: '9 입력', exact: true }).click();
   await assertLayout(page);
-  await page.getByRole('button', { name: '업보 청문회 시작', exact: true }).click();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
   for (let i = 0; i < 2; i++) {
     await page.getByRole('button', { name: '내 질문 시작', exact: true }).click();
     await page.getByRole('button', { name: '응답 완료', exact: true }).click();

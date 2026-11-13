@@ -2,7 +2,7 @@ import type { InputPolicy, QuestionPolicy } from './policy';
 
 export type Mode = 'solo' | 'split';
 export interface Participant { readonly id: string; readonly nickname: string }
-export interface Answer { readonly selectedIds: readonly string[]; readonly score: bigint }
+export interface Answer { readonly selectedIds: readonly string[]; readonly rejectedIds: readonly string[]; readonly score: bigint }
 export interface WeightedParticipant extends Participant { readonly score: bigint }
 export interface SoloResult {
   readonly kind: 'solo';
@@ -12,7 +12,7 @@ export interface SoloResult {
 }
 export type Settlement = { readonly status: 'pending'; readonly policyId: 'Q02'; readonly message: string };
 
-export function calculateScore(selectedIds: readonly string[], config: QuestionPolicy): bigint {
+export function calculateScore(selectedIds: readonly string[], config: QuestionPolicy, mode: Mode | null = null): bigint {
   if (!config.decision || !config.version || config.questions.length === 0) {
     throw new Error('질문과 점수 기준의 승인을 확인하지 못했어요.');
   }
@@ -21,10 +21,11 @@ export function calculateScore(selectedIds: readonly string[], config: QuestionP
     throw new Error('질문 구성이 올바르지 않아요. 설정을 확인해 주세요.');
   }
   let score = 100n;
+  const weightMultiplier = mode === 'solo' ? 2n : 1n;
   for (const id of new Set(selectedIds)) {
     const question = questions.get(id);
     if (!question) throw new Error('알 수 없는 질문이 있어요. 질문 구성을 확인해 주세요.');
-    score += question.weight;
+    score += question.weight * weightMultiplier;
   }
   score = score < 20n ? 20n : score;
   if (config.maximumScore !== null) {
@@ -46,13 +47,13 @@ export function validateParticipants(rows: readonly Participant[], config: Input
       errors[row.id] = `닉네임은 ${config.maximumNicknameLength}자까지 입력해 주세요.`;
     }
   });
-  if (new Set(rows.map((row) => row.id)).size !== rows.length) errors.count = '참가자 식별 정보가 겹쳐요. 명단을 다시 설정해 주세요.';
+  if (new Set(rows.map((row) => row.id)).size !== rows.length) errors.count = '참가자 정보가 겹쳐요. 명단을 다시 설정해 주세요.';
   return errors;
 }
 
 /** 입력 버퍼는 그대로 보존한다. 쉼표는 자동 제거하지 않으며 별도 표시만 한다. */
 export function parseAmount(raw: string, config: InputPolicy | null): bigint {
-  if (!/^[0-9]+$/.test(raw)) throw new Error('금액은 쉼표 없이 양의 정수로 입력해 주세요.');
+  if (!/^[0-9]+$/.test(raw)) throw new Error('금액을 입력해 주세요.');
   const amount = BigInt(raw);
   if (amount <= 0n) throw new Error('금액은 1원 이상 입력해 주세요.');
   if (config && amount > config.maximumAmount) throw new Error(`금액은 ${formatInteger(config.maximumAmount)}원 이하로 입력해 주세요.`);
@@ -119,6 +120,19 @@ export function calculateSettlement(): Settlement {
 }
 
 export interface SettlementRow { readonly participantId: string; readonly amount: bigint }
+
+export function allocateSettlement(totalAmount: bigint, rows: readonly WeightedParticipant[]) {
+  const total = totalScore(rows);
+  const shares = rows.map((row) => {
+    const weighted = totalAmount * row.score;
+    return { participantId: row.id, nickname: row.nickname, amount: weighted / total, remainder: weighted % total };
+  });
+  const remaining = totalAmount - shares.reduce((sum, row) => sum + row.amount, 0n);
+  [...shares].sort((a, b) => a.remainder > b.remainder ? -1 : a.remainder < b.remainder ? 1 : 0)
+    .slice(0, Number(remaining)).forEach((row) => { row.amount += 1n; });
+  validateSettlement(totalAmount, rows, shares);
+  return shares;
+}
 
 /** 승인된 배분기가 추가돼도 이 검증을 통과한 배열만 결과·공유에 사용할 수 있다. */
 export function validateSettlement(totalAmount: bigint, participants: readonly Participant[], rows: readonly SettlementRow[]): void {
